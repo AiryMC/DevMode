@@ -1,0 +1,7 @@
+# Toggles dev mode
+dev: false
+dev-kick-message: "<#4BE9FF><b>Airy<#F4F4F4>MC</b>\n\n<#FF5555>The server is currently under development."
+
+# Toggles maintenance mode
+maintenance: false
+maintenance-kick-message: "<#4BE9FF><b>Airy<#F4F4F4>MC</b>\n\n<#FF5555>The server is currently under maintenance."

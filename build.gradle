@@ -1,24 +1,35 @@
 plugins {
     id 'java'
     id 'eclipse'
-    id "org.jetbrains.gradle.plugin.idea-ext" version "1.0.1"
+    id 'org.jetbrains.gradle.plugin.idea-ext' version '1.0.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'net.airymc'
 version = '0.0.1'
 
 repositories {
-    mavenCentral()
+    //mavenCentral()
+    mavenLocal()
     maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
+        name = 'papermc-repo'
+        url = 'https://repo.papermc.io/repository/maven-public/'
     }
 }
 
 dependencies {
-    compileOnly "com.velocitypowered:velocity-api:3.3.0-SNAPSHOT"
-    annotationProcessor "com.velocitypowered:velocity-api:3.3.0-SNAPSHOT"
+    compileOnly 'com.velocitypowered:velocity-api:3.3.0-SNAPSHOT'
+    annotationProcessor 'com.velocitypowered:velocity-api:3.3.0-SNAPSHOT'
+
+    implementation 'net.airymc:AiryCore:0.0.1'
+    //shadow 'net.airymc:AiryCore:0.0.1'
 }
+
+shadowJar {
+    archiveClassifier.set('')
+}
+
+build.dependsOn += shadowJar
 
 def targetJavaVersion = 17
 java {
