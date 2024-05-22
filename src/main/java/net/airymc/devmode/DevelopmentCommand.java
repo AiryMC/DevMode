@@ -1,9 +1,15 @@
 package net.airymc.devmode;
 
-import com.velocitypowered.api.command.*;
+import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.CommandMeta;
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
 import net.airymc.core.file.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+
+import java.util.Optional;
 
 public final class DevelopmentCommand implements SimpleCommand {
 
@@ -26,29 +32,46 @@ public final class DevelopmentCommand implements SimpleCommand {
         CommandSource source = invocation.source();
         String[] args = invocation.arguments();
 
-        Config config = plugin.getConfig();
-
-        if (args.length == 0) {
-
-        } else if (args.length == 1 && args[0].equalsIgnoreCase("on")) {
-
-            config.set("dev", true);
-            config.set("maintenance", false);
-
+        if (args.length != 2) {
             Component component = MiniMessage.miniMessage().deserialize(
-                    "<#6BFF43>Development mode is now <#BBBBBB>on<#6BFF43>!"
+                    "<#FF5555>Usage: <#BBBBBB>/dev <server> <on|off>"
             );
             source.sendMessage(component);
-
-        } else if (args.length == 1 && args[0].equalsIgnoreCase("off")) {
-
-            config.set("dev", false);
-            config.set("maintenance", false);
-
-            Component component = MiniMessage.miniMessage().deserialize(
-                    "<#6BFF43>Development mode is now <#BBBBBB>off<#6BFF43>!"
-            );
-            source.sendMessage(component);
+            return;
         }
+
+        Optional<RegisteredServer> server = plugin.getServer().getServer(args[0].toLowerCase());
+        if (server.isEmpty()) {
+            Component component = MiniMessage.miniMessage().deserialize(
+                    "<#FF5555>Could not find server <#BBBBBB>" + args[0].toLowerCase() + "<#FF5555>."
+            );
+            source.sendMessage(component);
+            return;
+        }
+
+        if (args[1].equalsIgnoreCase("on")) {
+            devOn(source, server.get());
+        }
+        else if (args[1].equalsIgnoreCase("off")) {
+            devOff(source, server.get());
+        }
+    }
+
+    private void devOn(CommandSource source, RegisteredServer server) {
+        plugin.getServers().setServerClosed(server, CloseType.DEV, true);
+
+        Component component = MiniMessage.miniMessage().deserialize(
+                "<#6BFF43>Development mode is now set to <#BBBBBB>on <#6BFF43>for <#BBBBBB>" + server.getServerInfo().getName() + "<#6BFF43>."
+        );
+        source.sendMessage(component);
+    }
+
+    private void devOff(CommandSource source, RegisteredServer server) {
+        plugin.getServers().setServerClosed(server, CloseType.DEV, false);
+
+        Component component = MiniMessage.miniMessage().deserialize(
+                "<#6BFF43>Development mode is now set to <#BBBBBB>off <#6BFF43>for <#BBBBBB>" + server.getServerInfo().getName() + "<#6BFF43>."
+        );
+        source.sendMessage(component);
     }
 }

@@ -1,6 +1,7 @@
 package net.airymc.devmode;
 
 import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.server.RegisteredServer;
 import net.airymc.core.file.Config;
 
 import java.util.ArrayList;
@@ -13,28 +14,41 @@ public class Whitelist {
 
     public Whitelist() {
         config = new Config("DevMode/whitelist.yml");
-        config.setDefault("whitelist", List.of());
     }
 
-    public void addToWhitelist(UUID uuid) {
-        List<String> uuids = config.get("whitelist");
-        List<String> whitelist = new ArrayList<>(uuids);
-        if (!uuids.contains(uuid.toString())) {
-            whitelist.add(uuid.toString());
-            config.set("whitelist", whitelist);
-            config.save();
-        }
-    }
+    public void addToWhitelist(UUID uuid, RegisteredServer server) {
+        List<String> servers = config.get(uuid.toString());
+        String serverName = server.getServerInfo().getName();
 
-    public void removeFromWhitelist(UUID uuid) {
-        List<String> uuids = config.get("whitelist");
-        List<String> whitelist = new ArrayList<>(uuids);
-        whitelist.remove(uuid.toString());
-        config.set("whitelist", whitelist);
+        List<String> newServers = new ArrayList<>(servers);
+
+        if (!newServers.contains(serverName))
+            newServers.add(serverName);
+        else
+            newServers = List.of(serverName);
+
+        config.set(uuid.toString(), newServers);
         config.save();
     }
 
-    public boolean isWhitelisted(UUID uuid) {
-        return ((List<String>) config.get("whitelist")).contains(uuid.toString());
+    public void removeFromWhitelist(UUID uuid, RegisteredServer server) {
+        List<String> servers = config.get(uuid.toString());
+        String serverName = server.getServerInfo().getName();
+
+        if (servers == null)
+            return;
+
+        List<String> newServers = new ArrayList<>(servers);
+
+        newServers.remove(serverName);
+
+        config.set(uuid.toString(), newServers);
+        config.save();
+    }
+
+    public boolean isWhitelisted(UUID uuid, RegisteredServer server) {
+        if (!config.has(uuid.toString()))
+            return false;
+        return ((List<String>) config.get(uuid.toString())).contains(server.getServerInfo().getName());
     }
 }
