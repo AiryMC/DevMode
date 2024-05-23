@@ -3,11 +3,9 @@ package net.airymc.devmode;
 import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import com.velocitypowered.api.event.player.ServerPreConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.PluginContainer;
-import com.velocitypowered.api.proxy.ConnectionRequestBuilder;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import net.airymc.core.file.Config;
@@ -16,8 +14,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.slf4j.Logger;
 
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @com.velocitypowered.api.plugin.Plugin(
         id = "devmode",
@@ -39,6 +35,7 @@ public class Plugin {
     private Config config;
     private Whitelist whitelist;
     private Servers servers;
+    private RegisteredServer defaultServer;
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
@@ -46,10 +43,16 @@ public class Plugin {
         whitelist = new Whitelist();
         servers = new Servers();
 
+        Optional<RegisteredServer> serverOptional = server.getServer(config.get("default-server"));
+        serverOptional.ifPresent(registeredServer -> defaultServer = registeredServer);
+        if (defaultServer == null) {
+            logger.error("Default server {} not found. Please check the config and try again.", Optional.ofNullable(config.get("default-server")));
+        }
+
         CommandManager commandManager = server.getCommandManager();
         DevelopmentCommand.registerCommand(commandManager, this);
         MaintenanceCommand.registerCommand(commandManager, this);
-        AiryCommand.registerCommand(commandManager, this);
+        WhitelistCommand.registerCommand(commandManager, this);
     }
 
     @Subscribe
@@ -63,22 +66,13 @@ public class Plugin {
         if (servers.isServerClosed(event.getOriginalServer(), CloseType.DEV)) {
             Component component = MiniMessage.miniMessage().deserialize(config.get("dev-kick-message"));
 
-            String defaultServerName = config.get("default-server");
-            Optional<RegisteredServer> defaultServerOptional = server.getServer(defaultServerName);
-
-            if (defaultServerOptional.isEmpty()) {
+            if (defaultServer == null) {
                 event.getPlayer().disconnect(component);
                 return;
             }
 
-            if (event.getOriginalServer() == defaultServerOptional.get()) {
+            if (event.getOriginalServer() == defaultServer) {
                 event.getPlayer().disconnect(component);
-            }
-
-            RegisteredServer defaultServer = defaultServerOptional.get();
-            if (defaultServer == event.getOriginalServer()) {
-                event.getPlayer().disconnect(component);
-                return;
             }
 
             event.setResult(ServerPreConnectEvent.ServerResult.denied());
@@ -95,22 +89,13 @@ public class Plugin {
         if (servers.isServerClosed(event.getOriginalServer(), CloseType.MAINTENANCE)) {
             Component component = MiniMessage.miniMessage().deserialize(config.get("maintenance-kick-message"));
 
-            String defaultServerName = config.get("default-server");
-            Optional<RegisteredServer> defaultServerOptional = server.getServer(defaultServerName);
-
-            if (defaultServerOptional.isEmpty()) {
+            if (defaultServer == null) {
                 event.getPlayer().disconnect(component);
                 return;
             }
 
-            if (event.getOriginalServer() == defaultServerOptional.get()) {
+            if (event.getOriginalServer() == defaultServer) {
                 event.getPlayer().disconnect(component);
-            }
-
-            RegisteredServer defaultServer = defaultServerOptional.get();
-            if (defaultServer == event.getOriginalServer()) {
-                event.getPlayer().disconnect(component);
-                return;
             }
 
             event.setResult(ServerPreConnectEvent.ServerResult.denied());
@@ -146,5 +131,9 @@ public class Plugin {
 
     public Servers getServers() {
         return servers;
+    }
+
+    public RegisteredServer getDefaultServer() {
+        return defaultServer;
     }
 }

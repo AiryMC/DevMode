@@ -4,11 +4,18 @@ import com.velocitypowered.api.command.CommandManager;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.event.player.ServerPreConnectEvent;
+import com.velocitypowered.api.proxy.ConnectionRequestBuilder;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class MaintenanceCommand implements SimpleCommand {
 
@@ -55,8 +62,58 @@ public class MaintenanceCommand implements SimpleCommand {
         }
     }
 
+    @Override
+    public boolean hasPermission(Invocation invocation) {
+        return invocation.source().hasPermission("devmode.command.maintenance");
+    }
+
+    @Override
+    public CompletableFuture<List<String>> suggestAsync(Invocation invocation) {
+        String[] args = invocation.arguments();
+
+        if (args.length == 0) {
+            List<String> servers = new ArrayList<>();
+            for (RegisteredServer server : plugin.getServer().getAllServers()) {
+                servers.add(server.getServerInfo().getName());
+            }
+            return CompletableFuture.completedFuture(servers);
+        }
+
+        if (args.length == 2) {
+            return CompletableFuture.completedFuture(List.of("on", "off"));
+        }
+
+        return CompletableFuture.completedFuture(List.of());
+    }
+
     private void maintenanceOn(CommandSource source, RegisteredServer server) {
         plugin.getServers().setServerClosed(server, CloseType.MAINTENANCE, true);
+
+        for (Player player : server.getPlayersConnected()) {
+            if (plugin.getWhitelist().isWhitelisted(player.getUniqueId(), server))
+                continue;
+
+            Optional<ServerConnection> serverConnection = player.getCurrentServer();
+            if (serverConnection.isPresent()) {
+                RegisteredServer currentServer = serverConnection.get().getServer();
+
+                if (currentServer == plugin.getDefaultServer()) {
+                    Component component = MiniMessage.miniMessage().deserialize(plugin.getConfig().get("maintenance-kick-message"));
+                    player.disconnect(component);
+                } else {
+
+                    ConnectionRequestBuilder builder = player.createConnectionRequest(plugin.getDefaultServer());
+                    builder.connect().thenAccept(result -> {
+
+                        Component deniedComponent = MiniMessage.miniMessage().deserialize(
+                                plugin.getConfig().get("maintenance-denied-message")
+                        );
+                        player.sendMessage(deniedComponent);
+
+                    });
+                }
+            }
+        }
 
         Component component = MiniMessage.miniMessage().deserialize(
                 "<#6BFF43>Development mode is now set to <#BBBBBB>on <#6BFF43>for <#BBBBBB>" + server.getServerInfo().getName() + "<#6BFF43>."
