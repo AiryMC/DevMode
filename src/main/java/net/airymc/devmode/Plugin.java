@@ -58,6 +58,9 @@ public class Plugin {
     @Subscribe
     public void onPlayerPreConnect(ServerPreConnectEvent event) {
 
+        if (event.getPlayer().hasPermission("devmode.bypass"))
+            return;
+
         if (whitelist.isWhitelisted(event.getPlayer().getUniqueId(), event.getOriginalServer()))
             return;
 
