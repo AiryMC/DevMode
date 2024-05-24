@@ -1,7 +1,7 @@
-dev-kick-message: "<#4BE9FF><b>Airy<#F4F4F4>MC</b>\n\n<#FF5555>The server is currently under development."
-dev-denied-message: "<#FF5555>The server is currently under development."
+dev-kick-message: "<gray><b>DevMode</b>\n\n<red>The server is currently under development."
+dev-denied-message: "<red>The server is currently under development."
 
-maintenance-kick-message: "<#4BE9FF><b>Airy<#F4F4F4>MC</b>\n\n<#FF5555>The server is currently down for maintenance."
-maintenance-denied-message: "<#FF5555>The server is currently down for maintenance."
+maintenance-kick-message: "<gray><b>DevMode</b>\n\n<red>The server is currently down for maintenance."
+maintenance-denied-message: "<red>The server is currently down for maintenance."
 
 default-server: "lobby"
